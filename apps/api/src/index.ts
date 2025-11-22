@@ -16,7 +16,7 @@ import completeRouter from './routes/complete.js';
 import gatesRouter from './routes/gates.js';
 import keysRouter from './routes/keys.js';
 import authRouter from './routes/auth.js';
-import analyticsRouter from './routes/analytics.js'; 
+import analyticsRouter from './routes/logs.js'; 
 
 const app = express()
 const PORT = process.env.PORT || 3001; 
@@ -35,8 +35,8 @@ app.get('/health', (req, res) => {
 app.use('/v1/complete', completeRouter);
 app.use('/v1/gates', gatesRouter);
 app.use('/v1/keys', keysRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/analytics', analyticsRouter);
+app.use('/auth', authRouter);
+app.use('/v1/logs', analyticsRouter);
 
 // Start server
 app.listen(PORT, () => {
