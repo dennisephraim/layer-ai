@@ -2,14 +2,14 @@ import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
-import { authenticateDashboard } from '../middleware/dashboard-auth.js';
+import { authenticate } from '../middleware/auth.js';
 import type { CreateGateRequest, UpdateGateRequest, SupportedModel } from '@layer/types';
 import { MODEL_REGISTRY } from '@layer/types';
 
 const router: RouterType = Router(); 
 
-// All routes require authentication (dashboard auth with X-User-Id header)
-router.use(authenticateDashboard);
+// All routes require authentication (SDK auth with Bearer token)
+router.use(authenticate);
 
 // POST / - Create a new gate
 router.post('/', async (req: Request, res: Response) => {
