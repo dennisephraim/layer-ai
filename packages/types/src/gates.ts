@@ -1,4 +1,4 @@
-import { GateMessage, OverrideConfig } from "./models";
+import { OverrideConfig } from "./models";
 
 // Centralized model registry - single source of truth
 export const MODEL_REGISTRY = {
@@ -53,25 +53,23 @@ export type Provider = typeof MODEL_REGISTRY[SupportedModel]['provider'];
 
 // Gate creation request
 export interface CreateGateRequest {
-  name: string; 
+  name: string;
   model: SupportedModel;
-  systemPrompt?: string; 
-  temperature?: number; 
-  maxTokens?: number; 
-  topP?: number;
-  messages?: GateMessage[];
+  systemPrompt?: string;
   allowOverrides?: boolean | OverrideConfig;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
 }
 
 // Gate update request
 export interface UpdateGateRequest {
-  model: SupportedModel; 
-  systemPrompt?: string; 
-  temperature?: number; 
-  maxTokens?: number; 
-  topP?: number;
-  messages?: GateMessage[];
+  model: SupportedModel;
+  systemPrompt?: string;
   allowOverrides?: boolean | OverrideConfig;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
 }
 
 // Gate with analytics

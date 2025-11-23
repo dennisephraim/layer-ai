@@ -5,10 +5,18 @@ import { cache } from '../lib/db/redis.js';
 import { authenticate } from '../middleware/auth.js';
 import * as openai from '../services/providers/openai.js';
 import * as anthropic from '../services/providers/anthropic.js'
-import type { CompletionRequest, CompletionResponse, Gate, Message, SupportedModel } from '@layer/types';
+import type { CompletionRequest, CompletionResponse, Gate, Message, SupportedModel, OverrideConfig } from '@layer/types';
 import { MODEL_REGISTRY } from '@layer/types';
 
 const router: RouterType = Router();
+
+// MARK:- Helpers
+
+function isOverrideAllowed(allowOverrides: boolean | OverrideConfig | undefined, field: keyof OverrideConfig): boolean {
+  if (allowOverrides === undefined || allowOverrides === true) return true;
+  if (allowOverrides === false) return false;
+  return allowOverrides[field] ?? false;
+}
 
 // POST /v1/complete
 router.post('/', authenticate, async (req: Request, res: Response) => {
@@ -21,14 +29,15 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   const userId = req.userId;
 
   try {
-    const { gate: gateName, messages, temperature, maxTokens, topP } = req.body as CompletionRequest;
-
+    const { gate: gateName, messages, model, temperature, maxTokens, topP } = req.body as CompletionRequest;
+    
     if (!gateName) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing required field: gate'});
+      res.status(400).json({ error: 'bad_request', message: 'Missing required field: gate' });
       return;
     }
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing or invalid messages array'});
+      res.status(400).json({ error: 'bad_request', message: 'Missing required field: messages' });
       return;
     }
 
@@ -36,28 +45,31 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
     if (!gateConfig) {
       gateConfig = await db.getGateByUserAndName(userId, gateName);
-
-      if (!gateConfig) {
-        res.status(404).json({ error: 'not_found', message: `Gate "${gateName}" not found`});
+      if(!gateConfig) {
+        res.status(400).json({ error: 'not_found', message: `Gate "${gateName}" not found` });
         return;
       }
-
       await cache.setGate(userId, gateName, gateConfig);
     }
 
-    const provider = MODEL_REGISTRY[gateConfig.model as SupportedModel].provider;
-    let result: openai.ProviderResponse; 
+    // Determine final model (check if override is allowed)
+    const finalModel = (model && isOverrideAllowed(gateConfig.allowOverrides, 'model') && MODEL_REGISTRY[model as SupportedModel])
+      ? model as SupportedModel
+      : gateConfig.model;
+
+    const provider = MODEL_REGISTRY[finalModel].provider;
+    let result: openai.ProviderResponse;
 
     const finalParams = {
-      model: gateConfig.model, 
+      model: finalModel,
       messages,
-      temperature: temperature ?? gateConfig.temperature,
-      maxTokens: maxTokens ?? gateConfig.maxTokens,
-      topP: topP ?? gateConfig.topP,
+      temperature: isOverrideAllowed(gateConfig.allowOverrides, 'temperature') ? (temperature ?? gateConfig.temperature) : gateConfig.temperature, // change this to not use strings hardcoded
+      maxTokens: isOverrideAllowed(gateConfig.allowOverrides, 'maxTokens') ? (maxTokens ?? gateConfig.maxTokens) : gateConfig.maxTokens,
+      topP: isOverrideAllowed(gateConfig.allowOverrides, 'topP') ? (topP ?? gateConfig.topP) : gateConfig.topP,
       systemPrompt: gateConfig.systemPrompt,
     };
 
-    if (provider === 'openai') {
+    if (provider === 'openai') { // i'll change this comparison later
       result = await openai.createCompletion(finalParams);
     } else {
       result = await anthropic.createCompletion(finalParams);
@@ -65,13 +77,12 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
     const latencyMs = Date.now() - startTime;
 
-    // Log request (async, dont await)
     db.logRequest({
-      userId, 
-      gateId: gateConfig.id, 
+      userId,
+      gateId: gateConfig.id,
       gateName,
-      modelRequested: gateConfig.model, 
-      modelUsed: gateConfig.model,
+      modelRequested: model || gateConfig.model,
+      modelUsed: finalModel,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       totalTokens: result.totalTokens,
@@ -85,7 +96,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
     const response: CompletionResponse = {
       content: result?.content,
-      model: gateConfig.model,
+      model: finalModel,
       usage: {
         promptTokens: result.promptTokens,
         completionTokens: result.completionTokens,
@@ -94,7 +105,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error) {
+  } catch(error) {
     const latencyMs = Date.now() - startTime; 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     db.logRequest({

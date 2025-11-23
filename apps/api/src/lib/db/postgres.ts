@@ -137,9 +137,9 @@ export const db = {
 
   async createGate(userId: string, data: any): Promise<Gate> {
     const result = await getPool().query(
-      `INSERT INTO gates (user_id, name, model, system_prompt, temperature, max_tokens, top_p)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-       [userId, data.name, data.model, data.systemPrompt, data.temperature, data.maxTokens, data.topP]
+      `INSERT INTO gates (user_id, name, model, system_prompt, allow_overrides, temperature, max_tokens, top_p)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+       [userId, data.name, data.model, data.systemPrompt, JSON.stringify(data.allowOverrides), data.temperature, data.maxTokens, data.topP]
     );
     return toCamelCase(result.rows[0]);
   },
@@ -157,12 +157,13 @@ export const db = {
       `UPDATE gates SET
         model = COALESCE($2, model),
         system_prompt = COALESCE($3, system_prompt),
-        temperature = COALESCE($4, temperature),
-        max_tokens = COALESCE($5, max_tokens),
-        top_p = COALESCE($6, top_p),
+        allow_overrides = COALESCE($4, allow_overrides),
+        temperature = COALESCE($5, temperature),
+        max_tokens = COALESCE($6, max_tokens),
+        top_p = COALESCE($7, top_p),
         updated_at = NOW()
       WHERE id = $1 RETURNING *`,
-      [id, data.model, data.systemPrompt, data.temperature, data.maxTokens, data.topP]
+      [id, data.model, data.systemPrompt, JSON.stringify(data.allowOverrides), data.temperature, data.maxTokens, data.topP]
     );
     return result.rows[0] ? toCamelCase(result.rows[0]) : null;
   },

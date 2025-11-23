@@ -21,14 +21,13 @@ export interface ApiKey {
   createdAt: Date;
 }
 
-// Gate 
+// Gate
 export interface Gate {
-  id: string; 
+  id: string;
   userId: string;
-  name: string; 
+  name: string;
   model: SupportedModel; // requiring model at time of creation to prevent issues where model is empty and no responses can go through. of course this can be overriden at runtime
-  systemPrompt?: string; 
-  messages?: GateMessage[];
+  systemPrompt?: string;
   allowOverrides?: boolean | OverrideConfig;
   temperature?: number;
   maxTokens?: number;
@@ -37,17 +36,10 @@ export interface Gate {
   updatedAt: Date;
 }
 
-// Message in a gate template
-export interface GateMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string; // can contain placeholders
-}
-
 export interface OverrideConfig {
   model?: boolean;
-  messages?: boolean;
   temperature?: boolean;
-  maxTokens?: boolean; 
+  maxTokens?: boolean;
   topP?: boolean;
 }
 

@@ -3,7 +3,7 @@ import type { Router as RouterType } from 'express';
 import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
 import { authenticate } from '../middleware/auth.js';
-import type { CreateGateRequest, UpdateGateRequest, SupportedModel } from '@layer/types';
+import type { CreateGateRequest, UpdateGateRequest } from '@layer/types';
 import { MODEL_REGISTRY } from '@layer/types';
 
 const router: RouterType = Router(); 
@@ -19,7 +19,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const { name, model, systemPrompt, temperature, maxTokens, topP } = req.body as CreateGateRequest;
+    const { name, model, systemPrompt, allowOverrides, temperature, maxTokens, topP } = req.body as CreateGateRequest;
 
     if (!name || !model) {
       res.status(400).json({ error: 'bad_request', message: 'Missing required fields: name and model' });
@@ -38,10 +38,11 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const gate = await db.createGate(req.userId, {
-      name, 
+      name,
       model,
       systemPrompt,
-      temperature, 
+      allowOverrides,
+      temperature,
       maxTokens,
       topP,
     });
@@ -104,7 +105,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const { model, systemPrompt, temperature, maxTokens, topP } = req.body as UpdateGateRequest;
+    const { model, systemPrompt, allowOverrides, temperature, maxTokens, topP } = req.body as UpdateGateRequest;
 
     const existing = await db.getGateById(req.params.id);
 
@@ -126,6 +127,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const updated = await db.updateGate(req.params.id, {
       model,
       systemPrompt,
+      allowOverrides,
       temperature,
       maxTokens,
       topP,
