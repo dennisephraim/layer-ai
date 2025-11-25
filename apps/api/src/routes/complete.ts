@@ -129,6 +129,22 @@ async function executeWithFallback(params: CompletionParams, modelsToTry: Suppor
   return { result, modelUsed };
 }
 
+async function executeWithRoundRobin(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
+  if (!gateConfig.fallbackModels?.length) {
+    const result = await callProvider(params);
+    return { result, modelUsed: params.model };
+  }
+
+  const allModels = [gateConfig.model, ...gateConfig.fallbackModels];
+  const modelIndex = Math.floor(Math.random() * allModels.length);
+  const selectedModel = allModels[modelIndex];
+
+  const modelParams = { ...params, model: selectedModel };
+  const result = await callProvider(modelParams);
+
+  return { result, modelUsed: selectedModel };
+}
+
 async function executeWithRouting(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
   const modelsToTry = getModelsToTry(gateConfig, params.model);
 
@@ -137,8 +153,7 @@ async function executeWithRouting(gateConfig: Gate, params: CompletionParams): P
       return await executeWithFallback(params, modelsToTry);
 
     case 'round-robin':
-      // TODO: Implement round-robin logic
-      return await executeWithFallback(params, modelsToTry);
+      return await executeWithRoundRobin(gateConfig, params);
 
     case 'single':
     default:
