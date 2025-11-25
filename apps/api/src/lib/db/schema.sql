@@ -38,6 +38,8 @@ CREATE TABLE gates (
   max_tokens INTEGER,
   top_p DECIMAL(3,2),
   tags JSONB DEFAULT '[]',
+  routing_strategy VARCHAR(20) DEFAULT 'single',
+  fallback_models JSONB DEFAULT '[]',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, name)
