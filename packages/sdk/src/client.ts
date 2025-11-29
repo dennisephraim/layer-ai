@@ -2,6 +2,7 @@ import type { LayerConfig, RequestOptions } from './types.js';
 import type { ErrorResponse, CompletionRequest, CompletionResponse } from '@layer-ai/types';
 import { GatesResource } from './resources/gates.js';
 import { KeysResource } from './resources/keys.js';
+import { LogsResource } from './resources/logs.js';
 
 export class Layer {
   private apiKey: string; 
@@ -10,6 +11,7 @@ export class Layer {
 
   public gates: GatesResource;
   public keys: KeysResource;
+  public logs: LogsResource;
 
   constructor(config: LayerConfig) {
     if (!config.apiKey) {
@@ -21,6 +23,7 @@ export class Layer {
 
     this.gates = new GatesResource(this);
     this.keys = new KeysResource(this);
+    this.logs = new LogsResource(this);
   }
 
   /** @internal */

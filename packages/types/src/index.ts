@@ -4,3 +4,4 @@ export * from './model-registry';
 export * from './gates';
 export * from './api';
 export * from './keys';
+export * from './logs';

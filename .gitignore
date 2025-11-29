@@ -44,3 +44,7 @@ coverage/
 # Turbo
 .turbo/dist/
 .turbo/
+
+# Test files
+test-*.ts
+test-*.js
