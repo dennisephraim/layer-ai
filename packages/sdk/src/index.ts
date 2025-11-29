@@ -16,4 +16,5 @@ export type {
   CreateKeyResponse,
   Log,
   ListLogOptions,
+  TaskAnalysis,
 } from '@layer-ai/types';

@@ -5,3 +5,4 @@ export * from './gates';
 export * from './api';
 export * from './keys';
 export * from './logs';
+export * from './smart-routing';

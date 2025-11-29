@@ -1,5 +1,6 @@
 import type { Layer } from '../client.js';
 import type { Gate, CreateGateRequest, UpdateGateRequest } from '@layer-ai/types';
+import type { TaskAnalysis } from '@layer-ai/types';
 
 export class GatesResource {
   constructor(private client: Layer) {}
@@ -74,5 +75,17 @@ export class GatesResource {
       method: 'DELETE',
       path: `/v1/gates/${id}`,
     })
+  }
+
+  /**
+   * Get AI-powered model suggestions for a gate.
+   * 
+   * Layer-AI Internal Feature - returns a 404 on self-hosted public API
+   */
+  async suggestions(gateName: string): Promise<TaskAnalysis> {
+    return this.client.request<TaskAnalysis>({
+      method: 'GET',
+      path: `/v1/gates/${gateName}/suggestions`,
+    });
   }
 }
