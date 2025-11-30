@@ -1,5 +1,5 @@
-import { OverrideConfig, type GateBase } from "./models";
-import { MODEL_REGISTRY, type SupportedModel, type Provider } from "./model-registry";
+import { OverrideConfig, type GateBase } from "./models.js";
+import { MODEL_REGISTRY, type SupportedModel, type Provider } from "./model-registry.js";
 
 // Re-export for backwards compatibility
 export { MODEL_REGISTRY };

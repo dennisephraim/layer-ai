@@ -1,5 +1,5 @@
-import type { SupportedModel } from "./gates";
-import { TaskAnalysis } from "./smart-routing";
+import type { SupportedModel } from "./gates.js";
+import { TaskAnalysis } from "./smart-routing.js";
 
 // User 
 export interface User {
