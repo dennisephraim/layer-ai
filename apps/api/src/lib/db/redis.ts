@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import type { Gate } from '@layer/types';
+import type { Gate } from '@layer-ai/types';
 
 // Create redis client
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
@@ -47,8 +47,6 @@ export const cache = {
       }
 
       const gate = JSON.parse(cached); 
-
-      // convert date strings back to date objs
       gate.createdAt = new Date(gate.createdAt);
       gate.updatedAt = new Date(gate.updatedAt);
 

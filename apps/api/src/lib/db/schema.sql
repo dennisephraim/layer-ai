@@ -30,11 +30,16 @@ CREATE TABLE gates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
+  description TEXT,
   model VARCHAR(50) NOT NULL,
   system_prompt TEXT,
+  allow_overrides JSONB DEFAULT 'true',
   temperature DECIMAL(3,2),
   max_tokens INTEGER,
   top_p DECIMAL(3,2),
+  tags JSONB DEFAULT '[]',
+  routing_strategy VARCHAR(20) DEFAULT 'single',
+  fallback_models JSONB DEFAULT '[]',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, name)
@@ -65,6 +70,19 @@ CREATE TABLE requests (
 CREATE INDEX idx_requests_user_id ON requests(user_id);
 CREATE INDEX idx_requests_gate_id ON requests(gate_id);
 CREATE INDEX idx_requests_created_at ON requests(created_at);
+
+-- Session keys table (for dashboard authentication)
+CREATE TABLE session_keys (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) on DELETE CASCADE,
+  key_hash VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_session_keys_key_hash ON session_keys(key_hash);
+CREATE INDEX idx_session_keys_user_id ON session_keys(user_id);
+CREATE INDEX idx_session_keys_expires_at ON session_keys(expires_at);
 
 -- Function to update updated_at timestamp 
 CREATE OR REPLACE FUNCTION update_updated_at_column()

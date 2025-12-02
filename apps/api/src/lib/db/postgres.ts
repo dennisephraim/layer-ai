@@ -1,5 +1,5 @@
 import pg from 'pg';
-import type { User, ApiKey, Gate, Request as RequestLog } from '@layer/types';
+import type { User, ApiKey, Gate, Request as RequestLog } from '@layer-ai/types';
 
 const { Pool } = pg;
 
@@ -31,12 +31,22 @@ function getPool(): pg.Pool {
 
 // function to convert snake_case DB cols to camelCase TypeScript
 function toCamelCase(obj: any): any {
-  if (!obj) return obj; 
+  if (!obj) return obj;
 
   const converted: any = {}
   for (const key in obj) {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    converted[camelKey] = obj[key];
+    let value = obj[key];
+
+    // Convert numeric strings to numbers for specific fields
+    if ((camelKey === 'temperature' || camelKey === 'topP') && typeof value === 'string') {
+      value = parseFloat(value);
+    }
+    if (camelKey === 'maxTokens' && typeof value === 'string') {
+      value = parseInt(value, 10);
+    }
+
+    converted[camelKey] = value;
   }
 
   return converted;
@@ -137,9 +147,22 @@ export const db = {
 
   async createGate(userId: string, data: any): Promise<Gate> {
     const result = await getPool().query(
-      `INSERT INTO gates (user_id, name, model, system_prompt, temperature, max_tokens, top_p)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-       [userId, data.name, data.model, data.systemPrompt, data.temperature, data.maxTokens, data.topP]
+      `INSERT INTO gates (user_id, name, description, model, system_prompt, allow_overrides, temperature, max_tokens, top_p, tags, routing_strategy, fallback_models)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+       [
+         userId,
+         data.name,
+         data.description,
+         data.model,
+         data.systemPrompt,
+         data.allowOverrides ? JSON.stringify(data.allowOverrides) : null,
+         data.temperature,
+         data.maxTokens,
+         data.topP,
+         JSON.stringify(data.tags || []),
+         data.routingStrategy || 'single',
+         JSON.stringify(data.fallbackModels || [])
+       ]
     );
     return toCamelCase(result.rows[0]);
   },
@@ -155,14 +178,31 @@ export const db = {
   async updateGate(id: string, data: any): Promise<Gate | null> {
     const result = await getPool().query(
       `UPDATE gates SET
-        model = COALESCE($2, model),
-        system_prompt = COALESCE($3, system_prompt),
-        temperature = COALESCE($4, temperature),
-        max_tokens = COALESCE($5, max_tokens),
-        top_p = COALESCE($6, top_p),
+        description = COALESCE($2, description),
+        model = COALESCE($3, model),
+        system_prompt = COALESCE($4, system_prompt),
+        allow_overrides = COALESCE($5, allow_overrides),
+        temperature = COALESCE($6, temperature),
+        max_tokens = COALESCE($7, max_tokens),
+        top_p = COALESCE($8, top_p),
+        tags = COALESCE($9, tags),
+        routing_strategy = COALESCE($10, routing_strategy),
+        fallback_models = COALESCE($11, fallback_models),
         updated_at = NOW()
       WHERE id = $1 RETURNING *`,
-      [id, data.model, data.systemPrompt, data.temperature, data.maxTokens, data.topP]
+      [
+        id,
+        data.description,
+        data.model,
+        data.systemPrompt,
+        data.allowOverrides ? JSON.stringify(data.allowOverrides) : null,
+        data.temperature,
+        data.maxTokens,
+        data.topP,
+        data.tags ? JSON.stringify(data.tags) : null,
+        data.routingStrategy,
+        data.fallbackModels ? JSON.stringify(data.fallbackModels) : null,
+      ]
     );
     return result.rows[0] ? toCamelCase(result.rows[0]) : null;
   },
@@ -189,6 +229,15 @@ export const db = {
         data.errorMessage, data.userAgent, data.ipAddress
       ]
     )
+  },
+
+  // Session Keys
+  async getSessionKeyByHash(keyHash: string): Promise<{ userId: string; expiresAt: Date } | null> {
+    const result = await getPool().query(
+      'SELECT user_id, expires_at FROM session_keys WHERE key_hash = $1 AND expires_at > NOW()',
+      [keyHash]
+    );
+    return result.rows[0] ? toCamelCase(result.rows[0]) : null;
   }
 }; 
 

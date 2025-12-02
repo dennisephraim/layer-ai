@@ -2,12 +2,12 @@ import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import crypto from 'crypto';
 import { db } from '../lib/db/postgres.js';
-import { authenticateDashboard } from '../middleware/dashboard-auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router: RouterType = Router();
 
-// All routes require dashboard authentication
-router.use(authenticateDashboard);
+// All routes require sdk authentication
+router.use(authenticate);
 
 // Generate a random API key
 function generateApiKey(): string {
@@ -41,19 +41,17 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Generate key
     const key = generateApiKey();
     const keyHash = hashApiKey(key);
     const keyPrefix = key.substring(0, 12);
 
-    // Store in database
     const apiKey = await db.createApiKey(req.userId!, keyHash, keyPrefix, name);
 
     // Return full key only once
     res.status(201).json({
       id: apiKey.id,
       name: apiKey.name,
-      key: key, // Only returned on creation
+      key: key,
       keyPrefix: apiKey.keyPrefix,
       createdAt: apiKey.createdAt,
     });

@@ -1,19 +1,82 @@
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import { db } from '../lib/db/postgres.js';
-import { authenticateDashboard } from '../middleware/dashboard-auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router: RouterType = Router();
 
-// All routes require dashboard authentication
-router.use(authenticateDashboard);
+// All routes require SDK authentication
+router.use(authenticate);
 
-// GET /api/analytics/overview - Get dashboard overview metrics
+
+// GET /v1/logs - List request logs
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const gate = req.query.gate as string | undefined;
+
+    let query = `
+      SELECT
+        id,
+        user_id,
+        gate_id,
+        gate_name,
+        model_requested,
+        model_used,
+        prompt_tokens,
+        completion_tokens,
+        cost_usd,
+        latency_ms,
+        success,
+        error_message,
+        created_at as logged_at
+      FROM requests
+      WHERE user_id = $1
+    `;
+    
+    const params: any[] = [userId];
+    
+    if (gate) {
+      query += ` AND gate_name = $2`;
+      params.push(gate);
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await db.query(query, params);
+
+    const logs = result.rows.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      gateId: row.gate_id,
+      gateName: row.gate_name,
+      modelRequested: row.model_requested,
+      modelUsed: row.model_used,
+      promptTokens: row.prompt_tokens,
+      completionTokens: row.completion_tokens,
+      costUsd: parseFloat(row.cost_usd),
+      latencyMs: row.latency_ms,
+      success: row.success,
+      errorMessage: row.error_message,
+      loggedAt: row.logged_at,
+    }));
+
+    res.json(logs);
+  } catch (error) {
+    console.error('Logs list error:', error);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to fetch logs' });
+  }
+});
+
+
+// GET /v1/logs/overview - Get logs for api calls
 router.get('/overview', async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
 
-    // Get all metrics in parallel
     const [statsResult, gatesResult, recentRequestsResult] = await Promise.all([
       // Get aggregate stats
       db.query(

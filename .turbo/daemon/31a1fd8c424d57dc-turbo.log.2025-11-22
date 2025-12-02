@@ -1,0 +1,65 @@
+2025-11-22T18:38:05.993692Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/.turbo-cookie"), AnchoredSystemPathBuf(".turbo/cookies/1.cookie"), AnchoredSystemPathBuf(".turbo/cookies/2.cookie")}
+2025-11-22T18:38:05.993701Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-11-22T18:38:06.094011Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/.turbo")}
+2025-11-22T18:38:06.094020Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T18:38:06.693815Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/.turbo"), AnchoredSystemPathBuf(".turbo/cookies/4.cookie"), AnchoredSystemPathBuf("packages/sdk/.turbo"), AnchoredSystemPathBuf(".turbo/cookies/3.cookie"), AnchoredSystemPathBuf(".turbo/cookies/5.cookie")}
+2025-11-22T18:38:06.693826Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("layer-ai"), path: AnchoredSystemPathBuf("packages/sdk") }, WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-11-22T18:38:07.293681Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/6.cookie")}
+2025-11-22T18:38:07.293689Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-11-22T18:38:07.694103Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/dist"), AnchoredSystemPathBuf(".turbo/cookies/7.cookie")}
+2025-11-22T18:38:07.694111Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }, WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-11-22T18:38:07.704905Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-11-22T18:49:59.498680Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:49:59.498689Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:51:58.299391Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:51:58.299399Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:52:28.899402Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:52:28.899410Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:52:34.699710Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:52:34.699719Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:53:19.399399Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:53:19.399408Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:55:30.500731Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:55:30.500740Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:56:28.500383Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:56:28.500392Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:56:41.200509Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:56:41.200518Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T18:59:17.890822Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T18:59:17.890830Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:01:11.480902Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T19:01:11.480911Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:31:57.210267Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/keys.ts")}
+2025-11-22T19:31:57.210276Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:32:47.009347Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/gates.ts")}
+2025-11-22T19:32:47.009356Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:33:10.710189Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/complete.ts")}
+2025-11-22T19:33:10.710198Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:33:43.610215Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T19:33:43.610224Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:34:22.510453Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/middleware/auth.ts")}
+2025-11-22T19:34:22.510460Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:34:41.709994Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/logs.ts")}
+2025-11-22T19:34:41.710006Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:35:32.110438Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/lib/db/redis.ts")}
+2025-11-22T19:35:32.110446Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T19:51:50.098950Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/routes/auth.ts")}
+2025-11-22T19:51:50.098958Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T20:45:53.314500Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/models.ts")}
+2025-11-22T20:45:53.314510Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:46:50.615085Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/models.ts")}
+2025-11-22T20:46:50.615096Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:48:39.515099Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/models.ts")}
+2025-11-22T20:48:39.515110Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:50:11.214199Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/gates.ts")}
+2025-11-22T20:50:11.214207Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:51:40.515395Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/gates.ts")}
+2025-11-22T20:51:40.515408Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:52:33.515297Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/models.ts")}
+2025-11-22T20:52:33.515306Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:54:55.415615Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/types/src/models.ts")}
+2025-11-22T20:54:55.415624Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/types"), path: AnchoredSystemPathBuf("packages/types") }}))
+2025-11-22T20:57:23.514823Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/lib/db/schema.sql")}
+2025-11-22T20:57:23.514832Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-11-22T20:58:32.115262Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/src/lib/db/schema.sql")}
+2025-11-22T20:58:32.115271Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@layer/api"), path: AnchoredSystemPathBuf("apps/api") }}))

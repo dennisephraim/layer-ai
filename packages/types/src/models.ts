@@ -1,6 +1,7 @@
-import type { SupportedModel } from "./gates";
+import type { SupportedModel } from "./gates.js";
+import { TaskAnalysis } from "./smart-routing.js";
 
-// User model
+// User 
 export interface User {
   id: string; 
   email: string; 
@@ -9,7 +10,7 @@ export interface User {
   updatedAt: Date; 
 }
 
-// API Key model
+// API Key
 export interface ApiKey {
   id: string; 
   userId: string;
@@ -21,21 +22,55 @@ export interface ApiKey {
   createdAt: Date;
 }
 
-// Gate model 
-export interface Gate {
-  id: string; 
-  userId: string;
-  name: string; 
-  model: SupportedModel; 
-  systemPrompt?: string; 
-  temperature?: number; 
+// Gate
+export interface GateBase {
+  // Required fields
+  name: string;
+  model: SupportedModel;
+
+  // Optional public fields
+  description?: string;
+  systemPrompt?: string;
+  allowOverrides?: boolean | OverrideConfig;
+  temperature?: number;
   maxTokens?: number;
   topP?: number;
+  tags?: string[];
+  routingStrategy?: 'single' | 'fallback' | 'round-robin';
+  fallbackModels?: SupportedModel[];
+
+  // Internal fields (layer-ai-internal)
+  // These features require a Layer account and only work with Layer-hosted API
+  costWeight?: number;
+  latencyWeight?: number;
+  qualityWeight?: number;
+  maxCostPer1kTokens?: number;
+  maxLatencyMs?: number;
+  taskAnalysis?: TaskAnalysis;
+}
+
+export interface Gate extends GateBase {
+  id: string;
+  userId: string;
   createdAt: Date; 
   updatedAt: Date;
 }
 
-// Request log model
+export interface OverrideConfig {
+  model?: boolean;
+  temperature?: boolean;
+  maxTokens?: boolean;
+  topP?: boolean;
+}
+
+export enum OverrideField {
+  Model = 'model',
+  Temperature = 'temperature',
+  MaxTokens = 'maxTokens',
+  TopP = 'topP',
+}
+
+// Request log
 export interface Request {
   id: string; 
   userId: string; 

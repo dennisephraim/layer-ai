@@ -4,12 +4,21 @@ export interface Message {
   content: string;
 }
 
+// Base provider completion parameters (shared by all providers)
+export interface BaseCompletionParams {
+  model: string;
+  messages: Message[];
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  systemPrompt?: string;
+}
+
 // Main completion request (what developers send)
 export interface CompletionRequest {
-  gate: string; // name of gate
-  messages: Message[]; // conversation messages array
-
-  // Optional gate overrides for developers to get more control
+  gate: string;
+  messages: Message[];
+  model?: string;
   temperature?: number;
   maxTokens?: number;
   topP?: number;

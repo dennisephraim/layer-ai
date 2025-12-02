@@ -1,18 +1,171 @@
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
-import { db } from '../lib/db/postgres.js'; 
+import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
 import { authenticate } from '../middleware/auth.js';
 import * as openai from '../services/providers/openai.js';
-import * as anthropic from '../services/providers/anthropic.js'
-import type { CompletionRequest, CompletionResponse, Gate, Message, SupportedModel } from '@layer/types';
-import { MODEL_REGISTRY } from '@layer/types';
+import * as anthropic from '../services/providers/anthropic.js';
+import * as google from '../services/providers/google.js';
+import type { CompletionRequest, CompletionResponse, Gate, SupportedModel, OverrideConfig, BaseCompletionParams } from '@layer-ai/types';
+import { MODEL_REGISTRY, OverrideField } from '@layer-ai/types';
 
 const router: RouterType = Router();
 
-// POST /v1/complete
+// MARK:- Types
+
+interface CompletionParams extends Omit<BaseCompletionParams, 'model'> {
+  model: SupportedModel;
+}
+
+interface RoutingResult {
+  result: openai.ProviderResponse;
+  modelUsed: SupportedModel;
+}
+
+// MARK:- Helper Functions
+
+function isOverrideAllowed(allowOverrides: boolean | OverrideConfig | undefined | null, field: keyof OverrideConfig): boolean {
+  if (allowOverrides === undefined || allowOverrides === null || allowOverrides === true) return true;
+  if (allowOverrides === false) return false;
+  return allowOverrides[field] ?? false;
+}
+
+async function getGateConfig(userId: string, gateName: string): Promise<Gate | null> {
+  let gateConfig = await cache.getGate(userId, gateName);
+
+  if (!gateConfig) {
+    gateConfig = await db.getGateByUserAndName(userId, gateName);
+    if (gateConfig) {
+      await cache.setGate(userId, gateName, gateConfig);
+    }
+  }
+
+  return gateConfig;
+}
+
+function resolveFinalParams(
+  gateConfig: Gate,
+  requestParams: Pick<CompletionRequest, keyof OverrideConfig | 'messages'>
+): CompletionParams {
+  const { model, temperature, maxTokens, topP, messages } = requestParams;
+
+  let finalModel = gateConfig.model;
+  if (model && isOverrideAllowed(gateConfig.allowOverrides, OverrideField.Model) && MODEL_REGISTRY[model as SupportedModel]) {
+    finalModel = model as SupportedModel;
+  }
+
+  let finalTemperature = gateConfig.temperature;
+  if (isOverrideAllowed(gateConfig.allowOverrides, OverrideField.Temperature)) {
+    finalTemperature = temperature ?? gateConfig.temperature;
+  }
+
+  let finalMaxTokens = gateConfig.maxTokens;
+  if (isOverrideAllowed(gateConfig.allowOverrides, OverrideField.MaxTokens)) {
+    finalMaxTokens = maxTokens ?? gateConfig.maxTokens;
+  }
+
+  let finalTopP = gateConfig.topP;
+  if (isOverrideAllowed(gateConfig.allowOverrides, OverrideField.TopP)) {
+    finalTopP = topP ?? gateConfig.topP;
+  }
+
+  return {
+    model: finalModel,
+    messages,
+    temperature: finalTemperature,
+    maxTokens: finalMaxTokens,
+    topP: finalTopP,
+    systemPrompt: gateConfig.systemPrompt,
+  };
+}
+
+async function callProvider(params: CompletionParams): Promise<openai.ProviderResponse> {
+  const provider = MODEL_REGISTRY[params.model].provider;
+
+  switch (provider) {
+    case 'openai':
+      return await openai.createCompletion(params);
+    case 'anthropic':
+      return await anthropic.createCompletion(params);
+    case 'google':
+      return await google.createCompletion(params);
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
+}
+
+function getModelsToTry(gateConfig: Gate, primaryModel: SupportedModel): SupportedModel[] {
+  const modelsToTry: SupportedModel[] = [primaryModel];
+
+  if (gateConfig.routingStrategy === 'fallback' && gateConfig.fallbackModels?.length) {
+    modelsToTry.push(...gateConfig.fallbackModels);
+  }
+
+  return modelsToTry;
+}
+
+async function executeWithFallback(params: CompletionParams, modelsToTry: SupportedModel[]): Promise<RoutingResult> {
+  let result: openai.ProviderResponse | null = null;
+  let lastError: Error | null = null;
+  let modelUsed: SupportedModel = params.model;
+
+  for (const modelToTry of modelsToTry) {
+    try {
+      const modelParams = { ...params, model: modelToTry };
+      result = await callProvider(modelParams);
+      modelUsed = modelToTry;
+      break;
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Model ${modelToTry} failed, trying next fallback...`, error instanceof Error ? error.message : error);
+      continue;
+    }
+  }
+
+  if (!result) {
+    throw lastError || new Error('All models failed');
+  }
+
+  return { result, modelUsed };
+}
+
+async function executeWithRoundRobin(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
+  if (!gateConfig.fallbackModels?.length) {
+    const result = await callProvider(params);
+    return { result, modelUsed: params.model };
+  }
+
+  const allModels = [gateConfig.model, ...gateConfig.fallbackModels];
+  const modelIndex = Math.floor(Math.random() * allModels.length);
+  const selectedModel = allModels[modelIndex];
+
+  const modelParams = { ...params, model: selectedModel };
+  const result = await callProvider(modelParams);
+
+  return { result, modelUsed: selectedModel };
+}
+
+async function executeWithRouting(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
+  const modelsToTry = getModelsToTry(gateConfig, params.model);
+
+  switch (gateConfig.routingStrategy) {
+    case 'fallback':
+      return await executeWithFallback(params, modelsToTry);
+
+    case 'round-robin':
+      return await executeWithRoundRobin(gateConfig, params);
+
+    case 'single':
+    default:
+      const result = await callProvider(params);
+      return { result, modelUsed: params.model };
+  }
+}
+
+// MARK:- Route Handler
+
 router.post('/', authenticate, async (req: Request, res: Response) => {
-  const startTime = Date.now(); 
+  const startTime = Date.now();
 
   if (!req.userId) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing user ID'});
@@ -21,77 +174,49 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   const userId = req.userId;
 
   try {
-    const { gate: gateName, messages, temperature, maxTokens, topP } = req.body as CompletionRequest;
+    const { gate: gateName, messages, model, temperature, maxTokens, topP } = req.body as CompletionRequest;
 
-    // validate required fields 
     if (!gateName) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing required field: gate'});
+      res.status(400).json({ error: 'bad_request', message: 'Missing required field: gate' });
       return;
     }
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing or invalid messages array'});
+      res.status(400).json({ error: 'bad_request', message: 'Missing required field: messages' });
       return;
     }
 
-    // look up gate (try cache first, then db)
-    let gateConfig = await cache.getGate(userId, gateName);
-
+    const gateConfig = await getGateConfig(userId, gateName);
     if (!gateConfig) {
-      gateConfig = await db.getGateByUserAndName(userId, gateName);
-
-      if (!gateConfig) {
-        res.status(404).json({ error: 'not_found', message: `Gate "${gateName}" not found`});
-        return;
-      }
-
-      // cache for the next time
-      await cache.setGate(userId, gateName, gateConfig);
+      res.status(404).json({ error: 'not_found', message: `Gate "${gateName}" not found` });
+      return;
     }
 
-    // determine provider and call appropriate client
-    const provider = MODEL_REGISTRY[gateConfig.model as SupportedModel].provider;
-    let result: openai.ProviderResponse; 
-
-    // merge gate config with request overrides
-    const finalParams = {
-      model: gateConfig.model, 
-      messages,
-      temperature: temperature ?? gateConfig.temperature,
-      maxTokens: maxTokens ?? gateConfig.maxTokens,
-      topP: topP ?? gateConfig.topP,
-      systemPrompt: gateConfig.systemPrompt,
-    };
-
-    if (provider === 'openai') {
-      result = await openai.createCompletion(finalParams);
-    } else {
-      result = await anthropic.createCompletion(finalParams);
-    }
+    const finalParams = resolveFinalParams(gateConfig, { model, temperature, maxTokens, topP, messages });
+    const { result, modelUsed } = await executeWithRouting(gateConfig, finalParams);
 
     const latencyMs = Date.now() - startTime;
 
-    // Log request (async, dont await)
     db.logRequest({
-      userId, 
-      gateId: gateConfig.id, 
+      userId,
+      gateId: gateConfig.id,
       gateName,
-      modelRequested: gateConfig.model, 
-      modelUsed: gateConfig.model,
+      modelRequested: model || gateConfig.model,
+      modelUsed: modelUsed,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       totalTokens: result.totalTokens,
       costUsd: result.costUsd,
-      latencyMs, 
+      latencyMs,
       success: true,
       errorMessage: null,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: req.ip || null,
     }).catch(err => console.error('Failed to log request:', err));
 
-    // return response
     const response: CompletionResponse = {
       content: result?.content,
-      model: gateConfig.model,
+      model: modelUsed,
       usage: {
         promptTokens: result.promptTokens,
         completionTokens: result.completionTokens,
@@ -100,22 +225,22 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch (error) {
-    const latencyMs = Date.now() - startTime; 
+  } catch(error) {
+    const latencyMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     db.logRequest({
-      userId, 
-      gateId: null, 
-      gateName: req.body?.gate || null, 
-      modelRequested: null, 
-      modelUsed: null, 
-      promptTokens: 0, 
+      userId,
+      gateId: null,
+      gateName: req.body?.gate || null,
+      modelRequested: null,
+      modelUsed: null,
+      promptTokens: 0,
       completionTokens: 0,
-      totalTokens: 0, 
-      costUsd: 0, 
-      latencyMs, 
-      success: false, 
-      errorMessage, 
+      totalTokens: 0,
+      costUsd: 0,
+      latencyMs,
+      success: false,
+      errorMessage,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: req.ip || null,
     }).catch(err => console.error('Failed to log request:', err));

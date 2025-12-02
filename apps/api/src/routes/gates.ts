@@ -2,14 +2,14 @@ import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
-import { authenticateDashboard } from '../middleware/dashboard-auth.js';
-import type { CreateGateRequest, UpdateGateRequest, SupportedModel } from '@layer/types';
-import { MODEL_REGISTRY } from '@layer/types';
+import { authenticate } from '../middleware/auth.js';
+import type { CreateGateRequest, UpdateGateRequest } from '@layer-ai/types';
+import { MODEL_REGISTRY } from '@layer-ai/types';
 
 const router: RouterType = Router(); 
 
-// All routes require authentication (dashboard auth with X-User-Id header)
-router.use(authenticateDashboard);
+// All routes require authentication (SDK auth with Bearer token)
+router.use(authenticate);
 
 // POST / - Create a new gate
 router.post('/', async (req: Request, res: Response) => {
@@ -19,35 +19,36 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const { name, model, systemPrompt, temperature, maxTokens, topP } = req.body as CreateGateRequest;
+    const { name, description, model, systemPrompt, allowOverrides, temperature, maxTokens, topP, tags, routingStrategy, fallbackModels } = req.body as CreateGateRequest;
 
-    // Validate required fields
     if (!name || !model) {
       res.status(400).json({ error: 'bad_request', message: 'Missing required fields: name and model' });
       return;
     }
 
-    // Validate model is supported
     if (!MODEL_REGISTRY[model]) {
       res.status(400).json({ error: 'bad_request', message: `Unsupported model: ${model}` });
       return;
     }
 
-    // Check if gate name already exists for this user
     const existing = await db.getGateByUserAndName(req.userId, name);
     if (existing) {
       res.status(409).json({ error: 'conflict', message: `Gate "${name}" already exists` });
       return;
     }
 
-    // Create the gate
     const gate = await db.createGate(req.userId, {
-      name, 
+      name,
+      description,
       model,
       systemPrompt,
-      temperature, 
+      allowOverrides,
+      temperature,
       maxTokens,
       topP,
+      tags,
+      routingStrategy,
+      fallbackModels,
     });
 
     res.status(201).json(gate);
@@ -73,7 +74,29 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /:id - Get a single gate
+// GET /name/:name - Get a single gate by name
+router.get('/name/:name', async (req: Request, res: Response) => {
+  if (!req.userId) {
+    res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
+    return;
+  }
+
+  try {
+    const gate = await db.getGateByUserAndName(req.userId, req.params.name);
+
+    if (!gate) {
+      res.status(404).json({ error: 'not_found', message: 'Gate not found' });
+      return;
+    }
+
+    res.json(gate);
+  } catch (error) {
+    console.error('Get gate by name error:', error);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to get gate' });
+  }
+});
+
+// GET /:id - Get a single gate by ID
 router.get('/:id', async (req: Request, res: Response) => {
   if (!req.userId) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
@@ -88,7 +111,6 @@ router.get('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify ownership
     if (gate.userId !== req.userId) {
       res.status(404).json({ error: 'not_found', message: 'Gate not found' });
       return;
@@ -101,7 +123,51 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /:id - Update a gate
+// PATCH /name/:name - Update a gate by name
+router.patch('/name/:name', async (req: Request, res: Response) => {
+  if (!req.userId) {
+    res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
+    return;
+  }
+
+  try {
+    const { description, model, systemPrompt, allowOverrides, temperature, maxTokens, topP, tags, routingStrategy, fallbackModels } = req.body as UpdateGateRequest;
+
+    const existing = await db.getGateByUserAndName(req.userId, req.params.name);
+
+    if (!existing) {
+      res.status(404).json({ error: 'not_found', message: 'Gate not found' });
+      return;
+    }
+
+    if (model && !MODEL_REGISTRY[model]) {
+      res.status(400).json({ error: 'bad_request', message: `Unsupported model: ${model}` });
+      return;
+    }
+
+    const updated = await db.updateGate(existing.id, {
+      description,
+      model,
+      systemPrompt,
+      allowOverrides,
+      temperature,
+      maxTokens,
+      topP,
+      tags,
+      routingStrategy,
+      fallbackModels,
+    });
+
+    await cache.invalidateGate(req.userId, existing.name);
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Update gate by name error:', error);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to update gate' });
+  }
+});
+
+// PATCH /:id - Update a gate by ID
 router.patch('/:id', async (req: Request, res: Response) => {
   if (!req.userId) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
@@ -109,9 +175,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const { model, systemPrompt, temperature, maxTokens, topP } = req.body as UpdateGateRequest;
+    const { description, model, systemPrompt, allowOverrides, temperature, maxTokens, topP, tags, routingStrategy, fallbackModels } = req.body as UpdateGateRequest;
 
-    // Get existing gate
     const existing = await db.getGateById(req.params.id);
 
     if (!existing) {
@@ -119,28 +184,29 @@ router.patch('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify ownership
     if (existing.userId !== req.userId) {
       res.status(404).json({ error: 'not_found', message: 'Gate not found' });
       return;
     }
 
-    // Validate model if provided
     if (model && !MODEL_REGISTRY[model]) {
       res.status(400).json({ error: 'bad_request', message: `Unsupported model: ${model}` });
       return;
     }
 
-    // Update gate
     const updated = await db.updateGate(req.params.id, {
+      description,
       model,
       systemPrompt,
+      allowOverrides,
       temperature,
       maxTokens,
       topP,
+      tags,
+      routingStrategy,
+      fallbackModels,
     });
 
-    // Invalidate cache
     await cache.invalidateGate(req.userId, existing.name);
 
     res.json(updated);
@@ -150,7 +216,32 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /:id - Delete a gate
+// DELETE /name/:name - Delete a gate by name
+router.delete('/name/:name', async (req: Request, res: Response) => {
+  if (!req.userId) {
+    res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
+    return;
+  }
+
+  try {
+    const existing = await db.getGateByUserAndName(req.userId, req.params.name);
+
+    if (!existing) {
+      res.status(404).json({ error: 'not_found', message: 'Gate not found' });
+      return;
+    }
+
+    await db.deleteGate(existing.id);
+    await cache.invalidateGate(req.userId, existing.name);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Delete gate by name error:', error);
+    res.status(500).json({ error: 'internal_error', message: 'Failed to delete gate' });
+  }
+});
+
+// DELETE /:id - Delete a gate by ID
 router.delete('/:id', async (req: Request, res: Response) => {
   if (!req.userId) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
@@ -158,7 +249,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    // Get existing gate
     const existing = await db.getGateById(req.params.id);
 
     if (!existing) {
@@ -166,16 +256,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify ownership
     if (existing.userId !== req.userId) {
       res.status(404).json({ error: 'not_found', message: 'Gate not found' });
       return;
     }
 
-    // Delete gate
     await db.deleteGate(req.params.id);
-
-    // Invalidate cache
     await cache.invalidateGate(req.userId, existing.name);
 
     res.status(204).send();
