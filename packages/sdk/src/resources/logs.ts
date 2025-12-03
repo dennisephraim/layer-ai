@@ -1,5 +1,5 @@
 import type { Layer } from '../client.js';
-import type { Log, ListLogOptions } from '@layer-ai/types';
+import type { Log, ListLogOptions } from '../types/index.js';
 
 
 export class LogsResource {

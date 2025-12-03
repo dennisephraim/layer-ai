@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import type { Message, SupportedModel } from '@layer-ai/types';
-import { MODEL_REGISTRY } from "@layer-ai/types";
+import type { Message, SupportedModel } from '@layer-ai/sdk';
+import { MODEL_REGISTRY } from "@layer-ai/sdk";
 
 let client: GoogleGenAI | null = null;
 

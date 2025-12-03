@@ -1,6 +1,6 @@
 import type { Layer } from '../client.js';
-import type { Gate, CreateGateRequest, UpdateGateRequest } from '@layer-ai/types';
-import type { TaskAnalysis } from '@layer-ai/types';
+import type { Gate, CreateGateRequest, UpdateGateRequest } from '../types/index.js';
+import type { TaskAnalysis } from '../types/index.js';
 
 export class GatesResource {
   constructor(private client: Layer) {}

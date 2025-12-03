@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { getLayerClient } from '../lib/api-client.js';
 import { pullGatesToConfig, readLocalConfig } from '../lib/sync.js';
-import type { GateConfig } from '@layer-ai/types';
+import type { GateConfig } from '@layer-ai/sdk';
 
 export const pullCommand = new Command('pull')
   .description('Pull gates from remote to layer.config.yaml')

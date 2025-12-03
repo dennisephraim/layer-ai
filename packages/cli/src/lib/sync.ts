@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { parseYAML } from '@layer-ai/config';
+import { parseYAML } from '@layer-ai/sdk/config';
 import YAML from 'yaml';
-import type { Gate, GateConfig, LayerConfigFile } from '@layer-ai/types';
+import type { Gate, GateConfig, LayerConfigFile } from '@layer-ai/sdk';
 
 /**
  * Pull gates from remote and write to config file

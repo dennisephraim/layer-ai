@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { loadConfig } from '@layer-ai/config';
+import { loadConfig } from '@layer-ai/sdk/config';
 import chalk from 'chalk';
 import { existsSync } from 'fs';
 import { resolve } from 'path';

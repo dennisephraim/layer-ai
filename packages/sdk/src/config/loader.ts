@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import type { LayerConfigFile } from '@layer-ai/types';
+import type { LayerConfigFile } from '../types/index.js';
 import { parseYAML } from './parser.js';
 import { validateConfig } from './validator.js';
 

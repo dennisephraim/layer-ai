@@ -6,8 +6,8 @@ import { authenticate } from '../middleware/auth.js';
 import * as openai from '../services/providers/openai.js';
 import * as anthropic from '../services/providers/anthropic.js';
 import * as google from '../services/providers/google.js';
-import type { CompletionRequest, CompletionResponse, Gate, SupportedModel, OverrideConfig, BaseCompletionParams } from '@layer-ai/types';
-import { MODEL_REGISTRY, OverrideField } from '@layer-ai/types';
+import type { CompletionRequest, CompletionResponse, Gate, SupportedModel, OverrideConfig, BaseCompletionParams } from '@layer-ai/sdk';
+import { MODEL_REGISTRY, OverrideField } from '@layer-ai/sdk';
 
 const router: RouterType = Router();
 
