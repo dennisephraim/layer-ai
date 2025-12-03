@@ -1,5 +1,5 @@
 import type { LayerConfig, RequestOptions } from './types.js';
-import type { ErrorResponse, CompletionRequest, CompletionResponse } from '@layer-ai/types';
+import type { ErrorResponse, CompletionRequest, CompletionResponse } from './types/index.js';
 import { GatesResource } from './resources/gates.js';
 import { KeysResource } from './resources/keys.js';
 import { LogsResource } from './resources/logs.js';

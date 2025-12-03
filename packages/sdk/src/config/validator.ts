@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { LayerConfigFile } from '@layer-ai/types';
+import type { LayerConfigFile } from '../types/index.js';
 
 const GateConfigSchema = z.object({
   // Required fields

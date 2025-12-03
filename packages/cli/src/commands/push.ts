@@ -4,8 +4,8 @@ import { readFileSync, existsSync } from 'fs';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import { getLayerClient } from '../lib/api-client.js';
-import { parseYAML, validateConfig } from '@layer-ai/config';
-import type { LayerConfigFile, GateConfig } from '@layer-ai/types';
+import { parseYAML, validateConfig } from '@layer-ai/sdk/config';
+import type { LayerConfigFile, GateConfig } from '@layer-ai/sdk';
 
 export const pushCommand = new Command('push')
   .description('Push gates from layer.config.yaml to remote')

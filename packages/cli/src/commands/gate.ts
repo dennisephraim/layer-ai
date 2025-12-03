@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { getLayerClient } from '../lib/api-client.js';
 import { pullGatesToConfig } from '../lib/sync.js';
-import { MODEL_REGISTRY } from '@layer-ai/types';
+import { MODEL_REGISTRY } from '@layer-ai/sdk';
 
 export const gateCommand = new Command('gate')
   .description('Manage Layer gates');

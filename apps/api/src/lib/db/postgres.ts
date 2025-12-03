@@ -1,5 +1,5 @@
 import pg from 'pg';
-import type { User, ApiKey, Gate, Request as RequestLog } from '@layer-ai/types';
+import type { User, ApiKey, Gate, Request as RequestLog } from '@layer-ai/sdk';
 
 const { Pool } = pg;
 
