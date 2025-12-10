@@ -3,6 +3,7 @@ import type { Router as RouterType } from 'express';
 import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
 import { authenticate } from '../middleware/auth.js';
+import { OpenAIAdapter } from '../services/providers/openai-adapter.js';
 import * as openai from '../services/providers/openai.js';
 import * as anthropic from '../services/providers/anthropic.js';
 import * as google from '../services/providers/google.js';
@@ -79,12 +80,38 @@ function resolveFinalParams(
   };
 }
 
+/**
+ * MIGRATION IN PROGRESS: Moving to normalized adapter pattern.
+ * OpenAI now uses the new adapter. Other providers will follow.
+ * This temporary conversion layer will be removed after all providers are migrated.
+ */
 async function callProvider(params: CompletionParams): Promise<openai.ProviderResponse> {
   const provider = MODEL_REGISTRY[params.model].provider;
 
   switch (provider) {
-    case 'openai':
-      return await openai.createCompletion(params);
+    case 'openai': {
+      const adapter = new OpenAIAdapter();
+      const layerResponse = await adapter.call({
+        gate: 'internal',
+        model: params.model,
+        type: 'chat',
+        data: {
+          messages: params.messages,
+          systemPrompt: params.systemPrompt,
+          temperature: params.temperature,
+          maxTokens: params.maxTokens,
+          topP: params.topP,
+        },
+      });
+
+      return {
+        content: layerResponse.content || '',
+        promptTokens: layerResponse.usage?.promptTokens || 0,
+        completionTokens: layerResponse.usage?.completionTokens || 0,
+        totalTokens: layerResponse.usage?.totalTokens || 0,
+        costUsd: layerResponse.cost || 0,
+      };
+    }
     case 'anthropic':
       return await anthropic.createCompletion(params);
     case 'google':
