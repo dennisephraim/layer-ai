@@ -14,6 +14,8 @@ import {
   ToolChoice,
   EncodingFormat,
   ADAPTER_HANDLED,
+  MODEL_REGISTRY,
+  SupportedModel,
 } from '@layer-ai/sdk';
 
 export { ADAPTER_HANDLED };
@@ -34,8 +36,6 @@ export abstract class ProviderAdapter {
   protected imageMimeTypeMappings?: Record<ImageMimeType, string>;
   protected encodingFormatMappings?: Record<EncodingFormat, string>;
 
-  abstract transformRequest(request: LayerRequest): unknown;
-  abstract transformResponse(response: unknown): LayerResponse;
   abstract call(request: LayerRequest): Promise<LayerResponse>;
 
   protected mapRole(role: Role): string {
@@ -149,7 +149,9 @@ export abstract class ProviderAdapter {
     promptTokens: number,
     completionTokens: number
   ): number {
-    // TODO: Import MODEL_REGISTRY and implement cost calculation
-    return 0;
+    const modelInfo = MODEL_REGISTRY[model as SupportedModel];
+    return modelInfo?.pricing
+      ? (promptTokens / 1000 * modelInfo.pricing.input) + (completionTokens / 1000 * modelInfo.pricing.output)
+      : 0;
   }
 }

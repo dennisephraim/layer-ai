@@ -229,6 +229,7 @@ export interface LayerResponse {
   };
   stream?: boolean;
   cost?: number;
+  latencyMs?: number;
   raw?: unknown;
 }
 
