@@ -80,15 +80,13 @@ export class GatesResource {
   /**
    * Get AI-powered model suggestions for a gate.
    *
-   * ⚠️ Internal Feature - Requires subscription to layer ai
-   *
-   * - Self-hosted API: Returns 404 (endpoint doesn't exist)
-   * - Internal tier: Returns AI-powered suggestions
+   * Analyzes the gate's task description and returns suggested models
+   * with confidence scores based on the task requirements.
    */
   async suggestions(gateName: string): Promise<TaskAnalysis> {
     return this.client.request<TaskAnalysis>({
       method: 'GET',
-      path: `/internal/v1/gates/${gateName}/suggestions`,
+      path: `/v1/gates/${gateName}/suggestions`,
     });
   }
 }
