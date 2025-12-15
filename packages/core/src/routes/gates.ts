@@ -271,36 +271,29 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// GET /:name/suggestions - Get AI-powered model suggestions for a gate
-router.get('/:name/suggestions', async (req: Request, res: Response) => {
+// POST /suggestions - Get AI-powered model suggestions for a gate
+router.post('/suggestions', async (req: Request, res: Response) => {
   if (!req.userId) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
     return;
   }
 
   try {
-    const { name } = req.params;
+    const { description, costWeight, latencyWeight, qualityWeight } = req.body;
 
-    const gate = await db.getGateByUserAndName(req.userId, name);
-
-    if (!gate) {
-      res.status(404).json({ error: 'not_found', message: 'Gate not found' });
-      return;
-    }
-
-    if (!gate.description) {
+    if (!description) {
       res.status(400).json({ error: 'bad_request', message: 'Gate must have a description for AI recommendations' });
       return;
     }
 
     const userPreferences = {
-      costWeight: gate.costWeight,
-      latencyWeight: gate.latencyWeight,
-      qualityWeight: gate.qualityWeight
+      costWeight: parseFloat(costWeight ?? '0.33'),
+      latencyWeight: parseFloat(latencyWeight ?? '0.33'),
+      qualityWeight: parseFloat(qualityWeight ?? '0.34'),
     };
 
     const { analyzeTask } = await import('../services/task-analysis.js');
-    const suggestions = await analyzeTask(gate.description, userPreferences);
+    const suggestions = await analyzeTask(description, userPreferences);
 
     res.json(suggestions);
   } catch (error) {
