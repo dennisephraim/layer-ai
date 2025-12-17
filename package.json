@@ -12,18 +12,25 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
     "clean": "turbo run clean && rm -rf node_modules",
     "type-check": "turbo run type-check",
-    "sync:models": "tsx scripts/sync-model-registry.ts"
+    "sync:models": "tsx scripts/sync-model-registry.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,md,json}": "prettier --write"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@types/node": "^20.10.0",
+    "dotenv": "17.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
-    "turbo": "^1.11.0",
-    "typescript": "^5.9.3",
     "tsx": "^4.20.6",
-    "dotenv": "17.2.3"
+    "turbo": "^1.11.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18.0.0",

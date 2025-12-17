@@ -84,10 +84,31 @@ docs: update installation instructions
 ## Coding Standards
 
 - **TypeScript**: Use TypeScript for all new code with strict mode enabled
-- **Formatting**: Run `pnpm format` before committing
+- **Formatting**: Code is automatically formatted on commit via lint-staged
 - **Testing**: Add tests for new features
 - **Types**: Avoid `any` types, leverage `@layer-ai/types` package
 - **Documentation**: Add JSDoc comments for public APIs
+
+### Code Formatting (Prettier)
+
+This project uses [Prettier](https://prettier.io/) for consistent code formatting. Formatting is **automatically applied to staged files** when you commit, so you don't need to manually format code.
+
+**Manual commands:**
+
+```bash
+# Check formatting (CI)
+pnpm format:check
+
+# Format all files
+pnpm format
+```
+
+**Configuration:**
+
+- [.prettierrc](./.prettierrc) - Prettier rules
+- [.prettierignore](./.prettierignore) - Files to ignore
+
+Prettier only formats modified files on commit via `lint-staged` and `husky`.
 
 ## Pull Request Process
 
