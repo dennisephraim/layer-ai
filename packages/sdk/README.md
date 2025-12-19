@@ -243,6 +243,10 @@ try {
 
 ## Examples
 
+For complete working examples, check out the [layer-ai-examples](https://github.com/micah-nettey/layer-ai-examples) repository:
+
+- **Content Generator** - Next.js app with smart routing for content generation
+
 ### Basic Completion
 
 ```typescript
