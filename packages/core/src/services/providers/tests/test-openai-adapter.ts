@@ -1,4 +1,4 @@
-import { OpenAIAdapter } from './openai-adapter.js';
+import { OpenAIAdapter } from '../openai-adapter.js';
 import type { LayerRequest } from '@layer-ai/sdk';
 
 const adapter = new OpenAIAdapter();
@@ -12,11 +12,11 @@ async function testChatCompletion() {
     type: 'chat',
     data: {
       messages: [
-        { role: 'user', content: 'Say "Hello World" and nothing else.' }
+        { role: 'user', content: 'Say "Hello World" and nothing else.' },
       ],
       temperature: 0.7,
       maxTokens: 10,
-    }
+    },
   };
 
   const response = await adapter.call(request);
@@ -40,14 +40,16 @@ async function testChatWithVision() {
         {
           role: 'user',
           content: 'What color is the sky in this image?',
-          images: [{
-            url: 'https://images.unsplash.com/photo-1765202659641-9ad9facfe5cf?q=80&w=1364&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-            detail: 'high'
-          }]
-        }
+          images: [
+            {
+              url: 'https://images.unsplash.com/photo-1765202659641-9ad9facfe5cf?q=80&w=1364&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+              detail: 'high',
+            },
+          ],
+        },
       ],
       maxTokens: 50,
-    }
+    },
   };
 
   const response = await adapter.call(request);
@@ -68,7 +70,7 @@ async function testImageGeneration() {
       size: '1024x1024',
       quality: 'standard',
       count: 1,
-    }
+    },
   };
 
   const response = await adapter.call(request);
@@ -87,7 +89,7 @@ async function testEmbeddings() {
     type: 'embeddings',
     data: {
       input: 'Hello world',
-    }
+    },
   };
 
   const response = await adapter.call(request);
@@ -109,7 +111,7 @@ async function testTextToSpeech() {
       voice: 'alloy',
       speed: 1.0,
       responseFormat: 'mp3',
-    }
+    },
   };
 
   const response = await adapter.call(request);

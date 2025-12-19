@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ProviderAdapter } from './base-adapter.js';
+import { BaseProviderAdapter } from './base-adapter.js';
 import {
   LayerRequest,
   LayerResponse,
@@ -24,7 +24,7 @@ function getOpenAIClient(): OpenAI {
   return openai;
 }
 
-export class OpenAIAdapter extends ProviderAdapter {
+export class OpenAIAdapter extends BaseProviderAdapter {
   protected provider = 'openai';
 
   protected roleMappings: Record<Role, string> = {
@@ -97,16 +97,22 @@ export class OpenAIAdapter extends ProviderAdapter {
       case 'tts':
         return this.handleTextToSpeech(request);
       case 'video':
-        throw new Error('Video generation not yet supported by OpenAI');
+        throw new Error('Video generation not yet supported by LayerAI');
       default:
         throw new Error(`Unknown modality: ${(request as any).type}`);
     }
   }
 
-  private async handleChat(request: Extract<LayerRequest, { type: 'chat' }>): Promise<LayerResponse> {
+  private async handleChat(
+    request: Extract<LayerRequest, { type: 'chat' }>
+  ): Promise<LayerResponse> {
     const startTime = Date.now();
     const client = getOpenAIClient();
     const { data: chat, model } = request;
+
+    if (!model) {
+      throw new Error('Model is required for chat completion');
+    }
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 
@@ -115,7 +121,9 @@ export class OpenAIAdapter extends ProviderAdapter {
     }
 
     for (const msg of chat.messages) {
-      const role = this.mapRole(msg.role) as OpenAI.Chat.ChatCompletionMessageParam['role'];
+      const role = this.mapRole(
+        msg.role
+      ) as OpenAI.Chat.ChatCompletionMessageParam['role'];
 
       if (msg.images && msg.images.length > 0) {
         const content: OpenAI.Chat.ChatCompletionContentPart[] = [];
@@ -125,12 +133,19 @@ export class OpenAIAdapter extends ProviderAdapter {
         }
 
         for (const image of msg.images) {
-          const imageUrl = image.url || `data:${image.mimeType || 'image/jpeg'};base64,${image.base64}`;
+          const imageUrl =
+            image.url ||
+            `data:${image.mimeType || 'image/jpeg'};base64,${image.base64}`;
           content.push({
             type: 'image_url',
             image_url: {
               url: imageUrl,
-              ...(image.detail && { detail: this.mapImageDetail(image.detail) as 'auto' | 'low' | 'high' }),
+              ...(image.detail && {
+                detail: this.mapImageDetail(image.detail) as
+                  | 'auto'
+                  | 'low'
+                  | 'high',
+              }),
             },
           });
         }
@@ -140,7 +155,8 @@ export class OpenAIAdapter extends ProviderAdapter {
         messages.push({
           role: 'assistant',
           content: msg.content || null,
-          tool_calls: msg.toolCalls as unknown as OpenAI.Chat.ChatCompletionMessageToolCall[],
+          tool_calls:
+            msg.toolCalls as unknown as OpenAI.Chat.ChatCompletionMessageToolCall[],
         });
       } else if (msg.toolCallId) {
         messages.push({
@@ -158,19 +174,28 @@ export class OpenAIAdapter extends ProviderAdapter {
     }
 
     const openaiRequest: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
-      model: model!,
+      model: model,
       messages,
       stream: false,
       ...(chat.temperature !== undefined && { temperature: chat.temperature }),
-      ...(chat.maxTokens !== undefined && { max_completion_tokens: chat.maxTokens }),
+      ...(chat.maxTokens !== undefined && {
+        max_completion_tokens: chat.maxTokens,
+      }),
       ...(chat.topP !== undefined && { top_p: chat.topP }),
       ...(chat.stopSequences !== undefined && { stop: chat.stopSequences }),
-      ...(chat.frequencyPenalty !== undefined && { frequency_penalty: chat.frequencyPenalty }),
-      ...(chat.presencePenalty !== undefined && { presence_penalty: chat.presencePenalty }),
+      ...(chat.frequencyPenalty !== undefined && {
+        frequency_penalty: chat.frequencyPenalty,
+      }),
+      ...(chat.presencePenalty !== undefined && {
+        presence_penalty: chat.presencePenalty,
+      }),
       ...(chat.seed !== undefined && { seed: chat.seed }),
       ...(chat.tools && {
         tools: chat.tools as unknown as OpenAI.Chat.ChatCompletionTool[],
-        ...(chat.toolChoice && { tool_choice: chat.toolChoice as OpenAI.Chat.ChatCompletionToolChoiceOption }),
+        ...(chat.toolChoice && {
+          tool_choice:
+            chat.toolChoice as OpenAI.Chat.ChatCompletionToolChoiceOption,
+        }),
       }),
     };
 
@@ -180,11 +205,12 @@ export class OpenAIAdapter extends ProviderAdapter {
     const promptTokens = response.usage?.prompt_tokens || 0;
     const completionTokens = response.usage?.completion_tokens || 0;
     const totalTokens = response.usage?.total_tokens || 0;
-    const cost = this.calculateCost(model!, promptTokens, completionTokens);
+    const cost = this.calculateCost(model, promptTokens, completionTokens);
 
     return {
       content: choice.message.content || undefined,
-      toolCalls: choice.message.tool_calls as unknown as LayerResponse['toolCalls'],
+      toolCalls: choice.message
+        .tool_calls as unknown as LayerResponse['toolCalls'],
       model: response.model,
       finishReason: this.mapFinishReason(choice.finish_reason),
       rawFinishReason: choice.finish_reason,
@@ -199,48 +225,73 @@ export class OpenAIAdapter extends ProviderAdapter {
     };
   }
 
-  private async handleImageGeneration(request: Extract<LayerRequest, { type: 'image' }>): Promise<LayerResponse> {
+  private async handleImageGeneration(
+    request: Extract<LayerRequest, { type: 'image' }>
+  ): Promise<LayerResponse> {
     const startTime = Date.now();
     const client = getOpenAIClient();
     const { data: image, model } = request;
 
+    if (!model) {
+      throw new Error('Model is required for image generation');
+    }
+
     const response = await client.images.generate({
-      model: model!,
+      model: model,
       prompt: image.prompt,
-      ...(image.size && { size: this.mapImageSize(image.size) as '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792' }),
-      ...(image.quality && { quality: this.mapImageQuality(image.quality) as 'standard' | 'hd' }),
+      ...(image.size && {
+        size: this.mapImageSize(image.size) as
+          | '256x256'
+          | '512x512'
+          | '1024x1024'
+          | '1792x1024'
+          | '1024x1792',
+      }),
+      ...(image.quality && {
+        quality: this.mapImageQuality(image.quality) as 'standard' | 'hd',
+      }),
       ...(image.count && { n: image.count }),
-      ...(image.style && { style: this.mapImageStyle(image.style) as 'vivid' | 'natural' }),
+      ...(image.style && {
+        style: this.mapImageStyle(image.style) as 'vivid' | 'natural',
+      }),
     });
 
     return {
-      images: (response.data || []).map(img => ({
+      images: (response.data || []).map((img) => ({
         url: img.url,
         revisedPrompt: img.revised_prompt,
       })),
-      model: model!,
+      model: model,
       latencyMs: Date.now() - startTime,
       raw: response,
     };
   }
 
-  private async handleEmbeddings(request: Extract<LayerRequest, { type: 'embeddings' }>): Promise<LayerResponse> {
+  private async handleEmbeddings(
+    request: Extract<LayerRequest, { type: 'embeddings' }>
+  ): Promise<LayerResponse> {
     const startTime = Date.now();
     const client = getOpenAIClient();
     const { data: embedding, model } = request;
 
+    if (!model) {
+      throw new Error('Model is required for embeddings');
+    }
+
     const response = await client.embeddings.create({
-      model: model!,
+      model: model,
       input: embedding.input,
       ...(embedding.dimensions && { dimensions: embedding.dimensions }),
-      ...(embedding.encodingFormat && { encoding_format: embedding.encodingFormat as 'float' | 'base64' }),
+      ...(embedding.encodingFormat && {
+        encoding_format: embedding.encodingFormat as 'float' | 'base64',
+      }),
     });
 
     const promptTokens = response.usage?.prompt_tokens || 0;
-    const cost = this.calculateCost(model!, promptTokens, 0);
+    const cost = this.calculateCost(model, promptTokens, 0);
 
     return {
-      embeddings: response.data.map(d => d.embedding),
+      embeddings: response.data.map((d) => d.embedding),
       model: response.model,
       usage: {
         promptTokens,
@@ -253,17 +304,37 @@ export class OpenAIAdapter extends ProviderAdapter {
     };
   }
 
-  private async handleTextToSpeech(request: Extract<LayerRequest, { type: 'tts' }>): Promise<LayerResponse> {
+  private async handleTextToSpeech(
+    request: Extract<LayerRequest, { type: 'tts' }>
+  ): Promise<LayerResponse> {
     const startTime = Date.now();
     const client = getOpenAIClient();
     const { data: tts, model } = request;
 
+    if (!model) {
+      throw new Error('Model is required for tts');
+    }
+
     const response = await client.audio.speech.create({
-      model: model!,
+      model: model,
       input: tts.input,
-      voice: (tts.voice || 'alloy') as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
+      voice: (tts.voice || 'alloy') as
+        | 'alloy'
+        | 'echo'
+        | 'fable'
+        | 'onyx'
+        | 'nova'
+        | 'shimmer',
       ...(tts.speed !== undefined && { speed: tts.speed }),
-      ...(tts.responseFormat && { response_format: this.mapAudioFormat(tts.responseFormat) as 'mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm' }),
+      ...(tts.responseFormat && {
+        response_format: this.mapAudioFormat(tts.responseFormat) as
+          | 'mp3'
+          | 'opus'
+          | 'aac'
+          | 'flac'
+          | 'wav'
+          | 'pcm',
+      }),
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());
@@ -274,9 +345,8 @@ export class OpenAIAdapter extends ProviderAdapter {
         base64,
         format: tts.responseFormat || 'mp3',
       },
-      model: model!,
+      model: model,
       latencyMs: Date.now() - startTime,
     };
   }
-
 }

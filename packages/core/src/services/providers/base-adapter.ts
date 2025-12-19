@@ -20,7 +20,7 @@ import {
 
 export { ADAPTER_HANDLED };
 
-export abstract class ProviderAdapter {
+export abstract class BaseProviderAdapter {
   protected abstract provider: string;
 
   protected roleMappings?: Record<Role, string>;
@@ -151,7 +151,8 @@ export abstract class ProviderAdapter {
   ): number {
     const modelInfo = MODEL_REGISTRY[model as SupportedModel];
     return modelInfo?.pricing
-      ? (promptTokens / 1000 * modelInfo.pricing.input) + (completionTokens / 1000 * modelInfo.pricing.output)
+      ? (promptTokens / 1000) * modelInfo.pricing.input +
+          (completionTokens / 1000) * modelInfo.pricing.output
       : 0;
   }
 }

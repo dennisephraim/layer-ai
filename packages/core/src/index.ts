@@ -4,6 +4,7 @@ export { default as gatesRouter } from './routes/gates.js';
 export { default as keysRouter } from './routes/keys.js';
 export { default as logsRouter } from './routes/logs.js';
 export { default as completeRouter } from './routes/complete.js';
+export { default as completeV2Router } from './routes/v2/complete.js';
 
 // Middleware
 export { authenticate } from './middleware/auth.js';
@@ -18,7 +19,9 @@ export const createSessionKey = async (userId: string): Promise<string> => {
   return db.createSessionKey(userId);
 };
 
-export const deleteSessionKeysForUser = async (userId: string): Promise<void> => {
+export const deleteSessionKeysForUser = async (
+  userId: string
+): Promise<void> => {
   const { db } = await import('./lib/db/postgres.js');
   return db.deleteSessionKeysForUser(userId);
 };

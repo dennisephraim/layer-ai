@@ -4,10 +4,17 @@ import { db } from '../lib/db/postgres.js';
 import { cache } from '../lib/db/redis.js';
 import { authenticate } from '../middleware/auth.js';
 import { OpenAIAdapter } from '../services/providers/openai-adapter.js';
+import { AnthropicAdapter } from '../services/providers/anthropic-adapter.js';
 import * as openai from '../services/providers/openai.js';
-import * as anthropic from '../services/providers/anthropic.js';
 import * as google from '../services/providers/google.js';
-import type { CompletionRequest, CompletionResponse, Gate, SupportedModel, OverrideConfig, BaseCompletionParams } from '@layer-ai/sdk';
+import type {
+  CompletionRequest,
+  CompletionResponse,
+  Gate,
+  SupportedModel,
+  OverrideConfig,
+  BaseCompletionParams,
+} from '@layer-ai/sdk';
 import { MODEL_REGISTRY, OverrideField } from '@layer-ai/sdk';
 
 const router: RouterType = Router();
@@ -25,13 +32,24 @@ interface RoutingResult {
 
 // MARK:- Helper Functions
 
-function isOverrideAllowed(allowOverrides: boolean | OverrideConfig | undefined | null, field: keyof OverrideConfig): boolean {
-  if (allowOverrides === undefined || allowOverrides === null || allowOverrides === true) return true;
+function isOverrideAllowed(
+  allowOverrides: boolean | OverrideConfig | undefined | null,
+  field: keyof OverrideConfig
+): boolean {
+  if (
+    allowOverrides === undefined ||
+    allowOverrides === null ||
+    allowOverrides === true
+  )
+    return true;
   if (allowOverrides === false) return false;
   return allowOverrides[field] ?? false;
 }
 
-async function getGateConfig(userId: string, gateName: string): Promise<Gate | null> {
+async function getGateConfig(
+  userId: string,
+  gateName: string
+): Promise<Gate | null> {
   let gateConfig = await cache.getGate(userId, gateName);
 
   if (!gateConfig) {
@@ -51,7 +69,11 @@ function resolveFinalParams(
   const { model, temperature, maxTokens, topP, messages } = requestParams;
 
   let finalModel = gateConfig.model;
-  if (model && isOverrideAllowed(gateConfig.allowOverrides, OverrideField.Model) && MODEL_REGISTRY[model as SupportedModel]) {
+  if (
+    model &&
+    isOverrideAllowed(gateConfig.allowOverrides, OverrideField.Model) &&
+    MODEL_REGISTRY[model as SupportedModel]
+  ) {
     finalModel = model as SupportedModel;
   }
 
@@ -82,10 +104,12 @@ function resolveFinalParams(
 
 /**
  * MIGRATION IN PROGRESS: Moving to normalized adapter pattern.
- * OpenAI now uses the new adapter. Other providers will follow.
+ * OpenAI and Anthropic now use the new adapter. Other providers will follow.
  * This temporary conversion layer will be removed after all providers are migrated.
  */
-async function callProvider(params: CompletionParams): Promise<openai.ProviderResponse> {
+async function callProvider(
+  params: CompletionParams
+): Promise<openai.ProviderResponse> {
   const provider = MODEL_REGISTRY[params.model].provider;
 
   switch (provider) {
@@ -112,8 +136,29 @@ async function callProvider(params: CompletionParams): Promise<openai.ProviderRe
         costUsd: layerResponse.cost || 0,
       };
     }
-    case 'anthropic':
-      return await anthropic.createCompletion(params);
+    case 'anthropic': {
+      const adapter = new AnthropicAdapter();
+      const layerResponse = await adapter.call({
+        gate: 'internal',
+        model: params.model,
+        type: 'chat',
+        data: {
+          messages: params.messages,
+          systemPrompt: params.systemPrompt,
+          temperature: params.temperature,
+          maxTokens: params.maxTokens,
+          topP: params.topP,
+        },
+      });
+
+      return {
+        content: layerResponse.content || '',
+        promptTokens: layerResponse.usage?.promptTokens || 0,
+        completionTokens: layerResponse.usage?.completionTokens || 0,
+        totalTokens: layerResponse.usage?.totalTokens || 0,
+        costUsd: layerResponse.cost || 0,
+      };
+    }
     case 'google':
       return await google.createCompletion(params);
     default:
@@ -121,17 +166,26 @@ async function callProvider(params: CompletionParams): Promise<openai.ProviderRe
   }
 }
 
-function getModelsToTry(gateConfig: Gate, primaryModel: SupportedModel): SupportedModel[] {
+function getModelsToTry(
+  gateConfig: Gate,
+  primaryModel: SupportedModel
+): SupportedModel[] {
   const modelsToTry: SupportedModel[] = [primaryModel];
 
-  if (gateConfig.routingStrategy === 'fallback' && gateConfig.fallbackModels?.length) {
+  if (
+    gateConfig.routingStrategy === 'fallback' &&
+    gateConfig.fallbackModels?.length
+  ) {
     modelsToTry.push(...gateConfig.fallbackModels);
   }
 
   return modelsToTry;
 }
 
-async function executeWithFallback(params: CompletionParams, modelsToTry: SupportedModel[]): Promise<RoutingResult> {
+async function executeWithFallback(
+  params: CompletionParams,
+  modelsToTry: SupportedModel[]
+): Promise<RoutingResult> {
   let result: openai.ProviderResponse | null = null;
   let lastError: Error | null = null;
   let modelUsed: SupportedModel = params.model;
@@ -144,7 +198,10 @@ async function executeWithFallback(params: CompletionParams, modelsToTry: Suppor
       break;
     } catch (error) {
       lastError = error as Error;
-      console.log(`Model ${modelToTry} failed, trying next fallback...`, error instanceof Error ? error.message : error);
+      console.log(
+        `Model ${modelToTry} failed, trying next fallback...`,
+        error instanceof Error ? error.message : error
+      );
       continue;
     }
   }
@@ -156,7 +213,10 @@ async function executeWithFallback(params: CompletionParams, modelsToTry: Suppor
   return { result, modelUsed };
 }
 
-async function executeWithRoundRobin(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
+async function executeWithRoundRobin(
+  gateConfig: Gate,
+  params: CompletionParams
+): Promise<RoutingResult> {
   if (!gateConfig.fallbackModels?.length) {
     const result = await callProvider(params);
     return { result, modelUsed: params.model };
@@ -172,7 +232,10 @@ async function executeWithRoundRobin(gateConfig: Gate, params: CompletionParams)
   return { result, modelUsed: selectedModel };
 }
 
-async function executeWithRouting(gateConfig: Gate, params: CompletionParams): Promise<RoutingResult> {
+async function executeWithRouting(
+  gateConfig: Gate,
+  params: CompletionParams
+): Promise<RoutingResult> {
   const modelsToTry = getModelsToTry(gateConfig, params.model);
 
   switch (gateConfig.routingStrategy) {
@@ -195,32 +258,60 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   const startTime = Date.now();
 
   if (!req.userId) {
-    res.status(401).json({ error: 'unauthorized', message: 'Missing user ID'});
+    res.status(401).json({ error: 'unauthorized', message: 'Missing user ID' });
     return;
   }
   const userId = req.userId;
 
   try {
-    const { gate: gateName, messages, model, temperature, maxTokens, topP } = req.body as CompletionRequest;
+    const {
+      gate: gateName,
+      messages,
+      model,
+      temperature,
+      maxTokens,
+      topP,
+    } = req.body as CompletionRequest;
 
     if (!gateName) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing required field: gate' });
+      res
+        .status(400)
+        .json({
+          error: 'bad_request',
+          message: 'Missing required field: gate',
+        });
       return;
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      res.status(400).json({ error: 'bad_request', message: 'Missing required field: messages' });
+      res
+        .status(400)
+        .json({
+          error: 'bad_request',
+          message: 'Missing required field: messages',
+        });
       return;
     }
 
     const gateConfig = await getGateConfig(userId, gateName);
     if (!gateConfig) {
-      res.status(404).json({ error: 'not_found', message: `Gate "${gateName}" not found` });
+      res
+        .status(404)
+        .json({ error: 'not_found', message: `Gate "${gateName}" not found` });
       return;
     }
 
-    const finalParams = resolveFinalParams(gateConfig, { model, temperature, maxTokens, topP, messages });
-    const { result, modelUsed } = await executeWithRouting(gateConfig, finalParams);
+    const finalParams = resolveFinalParams(gateConfig, {
+      model,
+      temperature,
+      maxTokens,
+      topP,
+      messages,
+    });
+    const { result, modelUsed } = await executeWithRouting(
+      gateConfig,
+      finalParams
+    );
 
     const latencyMs = Date.now() - startTime;
 
@@ -239,7 +330,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       errorMessage: null,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: req.ip || null,
-    }).catch(err => console.error('Failed to log request:', err));
+    }).catch((err) => console.error('Failed to log request:', err));
 
     const response: CompletionResponse = {
       content: result?.content,
@@ -252,9 +343,10 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     };
 
     res.json(response);
-  } catch(error) {
+  } catch (error) {
     const latencyMs = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     db.logRequest({
       userId,
       gateId: null,
@@ -270,7 +362,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       errorMessage,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: req.ip || null,
-    }).catch(err => console.error('Failed to log request:', err));
+    }).catch((err) => console.error('Failed to log request:', err));
 
     console.error('Completion error:', error);
     res.status(500).json({ error: 'internal_error', message: errorMessage });
