@@ -106,6 +106,12 @@ gates:
 - **Fallback** - Try backup models if primary fails
 - **Round-robin** - Distribute requests across multiple models
 
+## Examples
+
+Check out the [layer-ai-examples](https://github.com/micah-nettey/layer-ai-examples) repository for complete example projects:
+
+- **Content Generator** - Next.js app demonstrating smart routing for blog outlines, social captions, and product descriptions
+
 ## Documentation
 
 - [Configuration Guide](CONFIG.md) - Gate configuration and best practices
