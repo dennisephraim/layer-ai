@@ -150,8 +150,9 @@ export abstract class BaseProviderAdapter {
     completionTokens: number
   ): number {
     const modelInfo = MODEL_REGISTRY[model as SupportedModel];
-    return modelInfo?.pricing
-      ? (promptTokens / 1000 * modelInfo.pricing.input) + (completionTokens / 1000 * modelInfo.pricing.output)
-      : 0;
+    if (!modelInfo || !('pricing' in modelInfo) || !modelInfo.pricing?.input || !modelInfo.pricing?.output) {
+      return 0;
+    }
+    return (promptTokens / 1000 * modelInfo.pricing.input) + (completionTokens / 1000 * modelInfo.pricing.output);
   }
 }

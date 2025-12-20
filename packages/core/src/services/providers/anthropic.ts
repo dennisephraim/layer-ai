@@ -71,8 +71,10 @@ export async function createCompletion(params: AnthropicCompletionParams): Promi
   const totalTokens = promptTokens + completionTokens;
 
   // Calculate cost
-  const pricing = MODEL_REGISTRY[params.model as SupportedModel].pricing;
-  const costUsd = (promptTokens / 1000 * pricing.input) + (completionTokens / 1000 * pricing.output);
+  const modelInfo = MODEL_REGISTRY[params.model as SupportedModel];
+  const costUsd = ('pricing' in modelInfo && modelInfo.pricing?.input && modelInfo.pricing?.output)
+    ? (promptTokens / 1000 * modelInfo.pricing.input) + (completionTokens / 1000 * modelInfo.pricing.output)
+    : 0;
 
   return {
     content,
