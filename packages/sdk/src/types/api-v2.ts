@@ -9,10 +9,7 @@ export type Role =
   | 'model'
   | 'developer';
 
-export type ImageDetail =
-  | 'auto'
-  | 'low'
-  | 'high';
+export type ImageDetail = 'auto' | 'low' | 'high';
 
 export type ImageSize =
   | '256x256'
@@ -23,27 +20,13 @@ export type ImageSize =
   | '1536x1024'
   | '1024x1536';
 
-export type ImageQuality =
-  | 'standard'
-  | 'hd';
+export type ImageQuality = 'standard' | 'hd';
 
-export type ImageStyle =
-  | 'vivid'
-  | 'natural';
+export type ImageStyle = 'vivid' | 'natural';
 
-export type AudioFormat =
-  | 'mp3'
-  | 'opus'
-  | 'aac'
-  | 'flac'
-  | 'wav'
-  | 'pcm';
+export type AudioFormat = 'mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm';
 
-export type VideoSize =
-  | '720x1280'
-  | '1280x720'
-  | '1024x1792'
-  | '1792x1024';
+export type VideoSize = '720x1280' | '1280x720' | '1024x1792' | '1792x1024';
 
 export type AudioMimeType =
   | 'audio/mpeg'
@@ -77,14 +60,9 @@ export type FinishReason =
   | 'filtered'
   | 'error';
 
-export type ResponseFormatType =
-  | 'text'
-  | 'json_object'
-  | 'json_schema';
+export type ResponseFormatType = 'text' | 'json_object' | 'json_schema';
 
-export type EncodingFormat =
-  | 'float'
-  | 'base64';
+export type EncodingFormat = 'float' | 'base64';
 
 export const ADAPTER_HANDLED = '__ADAPTER_HANDLED__';
 
@@ -117,10 +95,12 @@ export interface ChatRequest {
   stopSequences?: string[];
   frequencyPenalty?: number;
   presencePenalty?: number;
-  responseFormat?: ResponseFormatType | {
-    type: ResponseFormatType;
-    json_schema?: unknown;
-  };
+  responseFormat?:
+    | ResponseFormatType
+    | {
+        type: ResponseFormatType;
+        json_schema?: unknown;
+      };
   seed?: number;
 }
 
@@ -185,10 +165,21 @@ export interface ImageGenerationRequest {
 
 export interface VideoGenerationRequest {
   prompt: string;
+  negativePrompt?: string;
   duration?: number | string;
   size?: VideoSize;
   fps?: number;
   seed?: number;
+  image?: ImageInput;
+  lastFrame?: ImageInput;
+  referenceImages?: Array<{
+    url?: string;
+    base64?: string;
+    mimeType?: ImageMimeType;
+    referenceType?: 'style' | 'asset';
+  }>;
+  personGeneration?: 'allow_all' | 'allow_adult' | 'dont_allow';
+  numberOfVideos?: number;
 }
 
 // ====== EMBEDDINGS REQUEST ======
