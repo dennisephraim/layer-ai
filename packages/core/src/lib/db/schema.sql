@@ -31,6 +31,7 @@ CREATE TABLE gates (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   description TEXT,
+  task_type VARCHAR(50),
   model VARCHAR(50) NOT NULL,
   system_prompt TEXT,
   allow_overrides JSONB DEFAULT 'true',
@@ -40,6 +41,10 @@ CREATE TABLE gates (
   tags JSONB DEFAULT '[]',
   routing_strategy VARCHAR(20) DEFAULT 'single',
   fallback_models JSONB DEFAULT '[]',
+  cost_weight DECIMAL(3,2) DEFAULT 0.33,
+  latency_weight DECIMAL(3,2) DEFAULT 0.33,
+  quality_weight DECIMAL(3,2) DEFAULT 0.34,
+  reanalysis_period VARCHAR(20) DEFAULT 'never',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, name)

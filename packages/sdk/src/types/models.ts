@@ -1,5 +1,6 @@
 import type { SupportedModel } from "./gates.js";
 import { TaskAnalysis } from "./smart-routing.js";
+import type { ModelType } from "./model-registry.js";
 
 // User 
 export interface User {
@@ -30,6 +31,7 @@ export interface GateBase {
 
   // Optional public fields
   description?: string;
+  taskType?: ModelType; 
   systemPrompt?: string;
   allowOverrides?: boolean | OverrideConfig;
   temperature?: number;
@@ -38,9 +40,6 @@ export interface GateBase {
   tags?: string[];
   routingStrategy?: 'single' | 'fallback' | 'round-robin';
   fallbackModels?: SupportedModel[];
-
-  // Internal fields (layer-ai-internal)
-  // These features require a Layer account and only work with Layer-hosted API
   costWeight?: number;
   latencyWeight?: number;
   qualityWeight?: number;

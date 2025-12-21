@@ -39,7 +39,7 @@ function toCamelCase(obj: any): any {
     let value = obj[key];
 
     // Convert numeric strings to numbers for specific fields
-    if ((camelKey === 'temperature' || camelKey === 'topP') && typeof value === 'string') {
+    if ((camelKey === 'temperature' || camelKey === 'topP' || camelKey === 'costWeight' || camelKey === 'latencyWeight' || camelKey === 'qualityWeight') && typeof value === 'string') {
       value = parseFloat(value);
     }
     if (camelKey === 'maxTokens' && typeof value === 'string') {
@@ -147,12 +147,13 @@ export const db = {
 
   async createGate(userId: string, data: any): Promise<Gate> {
     const result = await getPool().query(
-      `INSERT INTO gates (user_id, name, description, model, system_prompt, allow_overrides, temperature, max_tokens, top_p, tags, routing_strategy, fallback_models)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO gates (user_id, name, description, task_type, model, system_prompt, allow_overrides, temperature, max_tokens, top_p, tags, routing_strategy, fallback_models, cost_weight, latency_weight, quality_weight, reanalysis_period)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
        [
          userId,
          data.name,
          data.description,
+         data.taskType,
          data.model,
          data.systemPrompt,
          data.allowOverrides ? JSON.stringify(data.allowOverrides) : null,
@@ -161,7 +162,11 @@ export const db = {
          data.topP,
          JSON.stringify(data.tags || []),
          data.routingStrategy || 'single',
-         JSON.stringify(data.fallbackModels || [])
+         JSON.stringify(data.fallbackModels || []),
+         data.costWeight ?? 0.33,
+         data.latencyWeight ?? 0.33,
+         data.qualityWeight ?? 0.34,
+         data.reanalysisPeriod || 'never'
        ]
     );
     return toCamelCase(result.rows[0]);
@@ -179,20 +184,26 @@ export const db = {
     const result = await getPool().query(
       `UPDATE gates SET
         description = COALESCE($2, description),
-        model = COALESCE($3, model),
-        system_prompt = COALESCE($4, system_prompt),
-        allow_overrides = COALESCE($5, allow_overrides),
-        temperature = COALESCE($6, temperature),
-        max_tokens = COALESCE($7, max_tokens),
-        top_p = COALESCE($8, top_p),
-        tags = COALESCE($9, tags),
-        routing_strategy = COALESCE($10, routing_strategy),
-        fallback_models = COALESCE($11, fallback_models),
+        task_type = COALESCE($3, task_type),
+        model = COALESCE($4, model),
+        system_prompt = COALESCE($5, system_prompt),
+        allow_overrides = COALESCE($6, allow_overrides),
+        temperature = COALESCE($7, temperature),
+        max_tokens = COALESCE($8, max_tokens),
+        top_p = COALESCE($9, top_p),
+        tags = COALESCE($10, tags),
+        routing_strategy = COALESCE($11, routing_strategy),
+        fallback_models = COALESCE($12, fallback_models),
+        cost_weight = COALESCE($13, cost_weight),
+        latency_weight = COALESCE($14, latency_weight),
+        quality_weight = COALESCE($15, quality_weight),
+        reanalysis_period = COALESCE($16, reanalysis_period),
         updated_at = NOW()
       WHERE id = $1 RETURNING *`,
       [
         id,
         data.description,
+        data.taskType,
         data.model,
         data.systemPrompt,
         data.allowOverrides ? JSON.stringify(data.allowOverrides) : null,
@@ -202,6 +213,10 @@ export const db = {
         data.tags ? JSON.stringify(data.tags) : null,
         data.routingStrategy,
         data.fallbackModels ? JSON.stringify(data.fallbackModels) : null,
+        data.costWeight,
+        data.latencyWeight,
+        data.qualityWeight,
+        data.reanalysisPeriod,
       ]
     );
     return result.rows[0] ? toCamelCase(result.rows[0]) : null;
