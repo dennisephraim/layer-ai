@@ -29,3 +29,4 @@ export { createCompletion as createOpenAICompletion } from './services/providers
 export { createCompletion as createAnthropicCompletion } from './services/providers/anthropic.js';
 export { createCompletion as createGoogleCompletion } from './services/providers/google.js';
 export type { ProviderResponse } from './services/providers/openai.js';
+export * from './services/task-analysis.js';
