@@ -6,6 +6,8 @@ import { authenticate } from '../../middleware/auth.js';
 import { OpenAIAdapter } from '../../services/providers/openai-adapter.js';
 import { AnthropicAdapter } from '../../services/providers/anthropic-adapter.js';
 import { GoogleAdapter } from '../../services/providers/google-adapter.js';
+import { MistralAdapter } from '../../services/providers/mistral-adapter.js';
+import * as google from '../../services/providers/google.js';
 import type { LayerRequest, LayerResponse, Gate, SupportedModel, OverrideConfig } from '@layer-ai/sdk';
 import { MODEL_REGISTRY, OverrideField } from '@layer-ai/sdk';
 
@@ -98,6 +100,10 @@ async function callProvider(request: LayerRequest): Promise<LayerResponse> {
     case 'google':
       const adapter = new GoogleAdapter();
       return await adapter.call(request);
+    case 'mistral': {
+      const adapter = new MistralAdapter();
+      return await adapter.call(request);
+    }
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }
